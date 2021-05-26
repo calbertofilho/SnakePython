@@ -14,18 +14,30 @@ import random
 import sys
 import pygame
 from pygame.constants import (
-    QUIT, KEYDOWN, K_ESCAPE, K_SPACE
-    #K_PAUSE, K_UP, K_DOWN, K_LEFT, K_RIGHT
+    QUIT, KEYDOWN,
+    K_ESCAPE, K_SPACE, K_PAUSE
+    #K_UP, K_DOWN, K_LEFT, K_RIGHT
 )
 #from pygame.locals import *
+from threading import Timer
 
 # Constantes
 BASE_DIR = os.path.dirname(__file__)                                  # Diretorio do jogo
 VERSION = 'v1.0'                                                      # Versão do jogo
 FPS = 15                                                              # Frames por segundo
-BLOCKS = 20
-BORDER = BLOCKS * 2
-
+BLOCKS = 20                                                           # Tamanho do bloco da matriz
+TILES = BLOCKS * 2                                                    # Tamanho das imagens tiles
+SCALE = (TILES, TILES)                                                # Escala criação dos TileMaps
+# Ativos
+SCENERY = None                                                        # TileMap do cenário
+SNAKE = None                                                          # TileMap da cobra
+RABBIT = None                                                         # Frames da animação do coelho
+BGM = None                                                            # Músicas de fundo
+FX = None                                                             # Efeitos
+# Definições de áudio
+VOLUME_FX = 0.3                                                       # Volume dos efeitos especiais
+VOLUME_BGM = 0.6                                                      # Volume da música de fundo
+FADEOUT_BGM = 1500                                                    # Fade pra parar a música
 
 class Screen():
     '''Classe que representa a tela do jogo'''
@@ -39,21 +51,18 @@ class Screen():
         self.icon = pygame.image.load(self.icon_location).convert_alpha() # Criação do ícone
         pygame.display.set_icon(self.icon)                            # Configuração do ícone
         os.environ['SDL_VIDEO_CENTERED'] = '1'                        # Centralização no desktop
-
     def update(self):
         '''Método que modela o comportamento da janela'''
         for event in pygame.event.get():                              # Controle de eventos
             if event.type == QUIT:                                    # Evento: Fechar a janela
-                close_game()
+                close_game()                                          # Chamada da função de fechar
             if event.type == KEYDOWN:                                 # Evento: Pressionar tecla
                 if event.key == K_ESCAPE:                             # Teste se a tecla é "ESC"
-                    close_game()
+                    close_game()                                      # Chamada da função de fechar
         pygame.display.update()                                       # Atualização de tela
-
     def get_surface(self):
         '''Método que retorna o painel de exibição dos objetos da janela'''
         return self.surface
-
     def get_size(self):
         '''Método que retorna o tamanho da tela'''
         return (self.width, self.height)
@@ -74,88 +83,140 @@ class Rabbit(pygame.sprite.Sprite):
     def update(self):
         '''Método que representa o comportamento do coelho a cada iteração do jogo'''
 
-def init_libs():
+def init_libs(quality):
     '''Função que inicializa as biliotecas utilizadas no jogo'''
+    if quality == 'high':                                             # Decisão da qualidade de som
+        buf = 2048                                                    # Alta qualidade
+    elif quality == 'mid':
+        buf = 1024                                                    # Qualidade média
+    else:
+        buf = 512                                                     # Qualidade baixa
     pygame.init()                                                     # Inicialização do PyGame
     pygame.mixer.pre_init(                                            # Inicialização do áudio
-        frequency = 44100, size = 16, channels = 1, buffer = 512
+        frequency = 44100,                                            # Frequência de 44100MHz
+        size = -16,                                                   # Comprimento de onda 16bits
+        channels = 2,                                                 # Tocar em Stereo, 2 canais
+        buffer = buf                                                  # Qualidade do som
     )
+
+def populate_assets():
+    '''Função que inicializa todos os ativos utilizados no jogo'''
+    global SCENERY, SNAKE, RABBIT, BGM, FX                           # Indica alteração na variável global
+    SCENERY = (
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/incorner.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/ground.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/void.png'), SCALE)
+    )
+    SNAKE = (
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/head.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/body.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/curve.png'), SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/tail.png'), SCALE)
+    )
+    RABBIT = (
+        # Carregar os frames da animação do coelho aqui
+    )
+    BGM = (
+        f'{BASE_DIR}/assets/sounds/bgm/main.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level1.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level2.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level3.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level4.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level5.mid'
+    )
+    sound_type = 'wav' if 'win' in sys.platform else 'ogg'            # Decisão do tipo de áudio
+    FX = (
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/eat.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/die.{sound_type}')
+    )
+
+def play_bgm(track):
+    if not pygame.mixer.music.get_busy():
+        pygame.mixer.music.load(BGM[track])
+        pygame.mixer.music.set_volume(VOLUME_BGM)
+        pygame.mixer.music.play(loops = -1)
+
+def pause_bgm(state):
+    if pygame.mixer.music.get_busy():
+        if state is True:
+            pygame.mixer.music.pause()
+    else:
+        if state is False:
+            pygame.mixer.music.unpause()
+
+def stop_bgm(delay):
+    pygame.mixer.music.fadeout(delay)
+    Timer(delay / 1000, pygame.mixer.music.stop()).start()
 
 def get_scenery_tile(tilemap):
     '''Função que retorna as peças para a montagem do cenário'''
-    scale = (BORDER, BORDER)
-    scenery = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), scale),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), scale),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/incorner.png'), scale),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/ground.png'), scale),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/void.png'), scale)
-    )
     scenery_tile = None
     if 'border' in tilemap:
         if 'out' in tilemap:
             if 'top' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[0], 0)
+                scenery_tile = pygame.transform.rotate(SCENERY[0], 0)
             if 'left' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[0], 90)
+                scenery_tile = pygame.transform.rotate(SCENERY[0], 90)
             if 'bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[0], 180)
+                scenery_tile = pygame.transform.rotate(SCENERY[0], 180)
             if 'right' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[0], 270)
+                scenery_tile = pygame.transform.rotate(SCENERY[0], 270)
         if 'in' in tilemap:
             if 'top' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 0)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 0)
             if 'left' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 90)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 90)
             if 'bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 180)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 180)
             if 'right' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 270)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 270)
     if 'corner' in tilemap:
         if 'out' in tilemap:
             if 'left_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[1], 0)
+                scenery_tile = pygame.transform.rotate(SCENERY[1], 0)
             if 'left_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[1], 90)
+                scenery_tile = pygame.transform.rotate(SCENERY[1], 90)
             if 'right_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[1], 180)
+                scenery_tile = pygame.transform.rotate(SCENERY[1], 180)
             if 'right_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[1], 270)
+                scenery_tile = pygame.transform.rotate(SCENERY[1], 270)
         if 'in' in tilemap:
             if 'left_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[2], 0)
+                scenery_tile = pygame.transform.rotate(SCENERY[2], 0)
             if 'left_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[2], 90)
+                scenery_tile = pygame.transform.rotate(SCENERY[2], 90)
             if 'right_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[2], 180)
+                scenery_tile = pygame.transform.rotate(SCENERY[2], 180)
             if 'right_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(scenery[2], 270)
+                scenery_tile = pygame.transform.rotate(SCENERY[2], 270)
     if 'ground' in tilemap:
-        scenery_tile = pygame.transform.rotate(scenery[3], 0)
+        scenery_tile = pygame.transform.rotate(SCENERY[3], 0)
     if 'void' in tilemap:
-        scenery_tile = pygame.transform.rotate(scenery[4], 0)
+        scenery_tile = pygame.transform.rotate(SCENERY[4], 0)
     return scenery_tile
 
 def create_base_stage(sface):
     '''Função que gera o mapa mais básico do jogo'''
     panel = sface.get_surface()                                       # Painel de exibição do jogo
     # Desenho do terreno
-    size_x = sface.get_size()[0] // BORDER
-    size_y = sface.get_size()[1] // BORDER
+    size_x = sface.get_size()[0] // TILES
+    size_y = sface.get_size()[1] // TILES
     for line in range(size_x):
         if (size_x - 1) > line >= 1:
             for column in range(size_y):
                 if (size_y - 1) > column >= 1:
-                    panel.blit(get_scenery_tile('ground'), (line * BORDER, column * BORDER))
+                    panel.blit(get_scenery_tile('ground'), (line * TILES, column * TILES))
     # Desenho das bordas
     panel.blit(get_scenery_tile('corner_out_left_top'), (0, 0))
     panel.blit(get_scenery_tile('corner_out_left_bottom'), (0, 560))
     panel.blit(get_scenery_tile('corner_out_right_top'), (760, 0))
     panel.blit(get_scenery_tile('corner_out_right_bottom'), (760, 560))
-    for line in range(BORDER, sface.get_size()[0] - BORDER, BORDER):
+    for line in range(TILES, sface.get_size()[0] - TILES, TILES):
         panel.blit(get_scenery_tile('border_out_top'), (line, 0))
         panel.blit(get_scenery_tile('border_out_bottom'), (line, 560))
-    for column in range(BORDER, sface.get_size()[1] - BORDER, BORDER):
+    for column in range(TILES, sface.get_size()[1] - TILES, TILES):
         panel.blit(get_scenery_tile('border_out_left'), (0, column))
         panel.blit(get_scenery_tile('border_out_right'), (760, column))
 
@@ -169,13 +230,13 @@ def create_obstacles(sface, num_obstacles):
         direction = random.randint(0, 1)
         if direction == 0:
             position = (
-                (random.randint(60, sface.get_size()[0] - 100 - (size * BORDER)) // 10) * 10,
+                (random.randint(60, sface.get_size()[0] - 100 - (size * TILES)) // 10) * 10,
                 (random.randint(60, sface.get_size()[1] - 100) // 10) * 10
             )
         if direction == 1:
             position = (
                 (random.randint(60, sface.get_size()[0] - 100) // 10) * 10,
-                (random.randint(60, sface.get_size()[1] - 100 - (size * BORDER)) // 10) * 10
+                (random.randint(60, sface.get_size()[1] - 100 - (size * TILES)) // 10) * 10
             )
         handicap = (position, size, direction)
         obstacles.insert(qty, handicap)
@@ -183,20 +244,20 @@ def create_obstacles(sface, num_obstacles):
     for num, obstacle in enumerate(obstacles):
         if obstacle[2] == 0:
             panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + BORDER))
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + TILES))
             for iterator in range(1, obstacle[1] + 1):
-                panel.blit(get_scenery_tile('border_in_top'), (obstacle[0][0] + (iterator * BORDER), obstacle[0][1]))
-                panel.blit(get_scenery_tile('border_in_bottom'), (obstacle[0][0] + (iterator * BORDER), obstacle[0][1] + BORDER))
-            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + (iterator * BORDER) + BORDER, obstacle[0][1]))
-            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + (iterator * BORDER) + BORDER, obstacle[0][1] + BORDER))
+                panel.blit(get_scenery_tile('border_in_top'), (obstacle[0][0] + (iterator * TILES), obstacle[0][1]))
+                panel.blit(get_scenery_tile('border_in_bottom'), (obstacle[0][0] + (iterator * TILES), obstacle[0][1] + TILES))
+            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + (iterator * TILES) + TILES, obstacle[0][1]))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + (iterator * TILES) + TILES, obstacle[0][1] + TILES))
         if obstacle[2] == 1:
             panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + BORDER, obstacle[0][1]))
+            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + TILES, obstacle[0][1]))
             for iterator in range(1, obstacle[1] + 1):
-                panel.blit(get_scenery_tile('border_in_left'), (obstacle[0][0], obstacle[0][1] + (iterator * BORDER)))
-                panel.blit(get_scenery_tile('border_in_right'), (obstacle[0][0] + BORDER, obstacle[0][1] + (iterator * BORDER)))
-            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * BORDER) + BORDER))
-            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + BORDER, obstacle[0][1] + (iterator * BORDER) + BORDER))
+                panel.blit(get_scenery_tile('border_in_left'), (obstacle[0][0], obstacle[0][1] + (iterator * TILES)))
+                panel.blit(get_scenery_tile('border_in_right'), (obstacle[0][0] + TILES, obstacle[0][1] + (iterator * TILES)))
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * TILES) + TILES))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + TILES, obstacle[0][1] + (iterator * TILES) + TILES))
         print(num, obstacle)
     # Criação da matriz de navegação do jogo
     size_x = sface.get_size()[0] // BLOCKS
@@ -215,30 +276,33 @@ def create_obstacles(sface, num_obstacles):
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
     create_base_stage(sface)
+    play_bgm(stage)
     if stage == 0:                                                    # Define a Tela de início
         create_obstacles(sface, random.randint(2, 6))
 
 def close_game():
     '''Função que encerra o jogo'''
     pygame.quit()
+    pygame.mixer.quit()
     sys.exit()
 
 def main():
     '''Função principal que contempla a lógica de execução do jogo'''
-    init_libs()                                                       # Inicialização dos recursos
+    init_libs('low')                                                  # Inicialização dos recursos
+    populate_assets()                                                 # Carrega os ativos do jogo
     screen = Screen()                                                 # Criação da janela
-    sound_type = 'wav' if 'win' in sys.platform else 'ogg'            # Decisão do tipo de áudio
     clock = pygame.time.Clock()                                       # Controle de tempo do jogo
     level = 0                                                         # Configura pra tela de início
     create_level(screen, level)                                       # Cria a tela selecionada
     start = True                                                      # Dá início a execução do jogo
-
     while start:
         clock.tick(FPS)
         screen.update()
         commands = pygame.key.get_pressed()
         if commands[K_SPACE]:
             start = False
+        if commands[K_PAUSE]:
+            stop_bgm(FADEOUT_BGM)
 
 try:
     while True:
