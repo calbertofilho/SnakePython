@@ -23,6 +23,9 @@ from pygame.constants import (
 BASE_DIR = os.path.dirname(__file__)                                  # Diretorio do jogo
 VERSION = 'v1.0'                                                      # Versão do jogo
 FPS = 15                                                              # Frames por segundo
+BLOCKS = 20
+BORDER = BLOCKS * 2
+
 
 class Screen():
     '''Classe que representa a tela do jogo'''
@@ -79,7 +82,8 @@ def init_libs():
     )
 
 def get_scenery_tile(tilemap):
-    scale = (40, 40)
+    '''Função que retorna as peças para a montagem do cenário'''
+    scale = (BORDER, BORDER)
     scenery = (
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), scale),
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), scale),
@@ -87,117 +91,132 @@ def get_scenery_tile(tilemap):
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/ground.png'), scale),
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/void.png'), scale)
     )
-
+    scenery_tile = None
     if 'border' in tilemap:
         if 'out' in tilemap:
             if 'top' in tilemap:
-                return pygame.transform.rotate(scenery[0], 0)
+                scenery_tile = pygame.transform.rotate(scenery[0], 0)
             if 'left' in tilemap:
-                return pygame.transform.rotate(scenery[0], 90)
+                scenery_tile = pygame.transform.rotate(scenery[0], 90)
             if 'bottom' in tilemap:
-                return pygame.transform.rotate(scenery[0], 180)
+                scenery_tile = pygame.transform.rotate(scenery[0], 180)
             if 'right' in tilemap:
-                return pygame.transform.rotate(scenery[0], 270)
+                scenery_tile = pygame.transform.rotate(scenery[0], 270)
         if 'in' in tilemap:
             if 'top' in tilemap:
-                return pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 0)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 0)
             if 'left' in tilemap:
-                return pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 90)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 90)
             if 'bottom' in tilemap:
-                return pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 180)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 180)
             if 'right' in tilemap:
-                return pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 270)
+                scenery_tile = pygame.transform.rotate(pygame.transform.flip(scenery[0], False, True), 270)
     if 'corner' in tilemap:
         if 'out' in tilemap:
             if 'left_top' in tilemap:
-                return pygame.transform.rotate(scenery[1], 0)
+                scenery_tile = pygame.transform.rotate(scenery[1], 0)
             if 'left_bottom' in tilemap:
-                return pygame.transform.rotate(scenery[1], 90)
+                scenery_tile = pygame.transform.rotate(scenery[1], 90)
             if 'right_bottom' in tilemap:
-                return pygame.transform.rotate(scenery[1], 180)
+                scenery_tile = pygame.transform.rotate(scenery[1], 180)
             if 'right_top' in tilemap:
-                return pygame.transform.rotate(scenery[1], 270)
+                scenery_tile = pygame.transform.rotate(scenery[1], 270)
         if 'in' in tilemap:
             if 'left_top' in tilemap:
-                return pygame.transform.rotate(scenery[2], 0)
+                scenery_tile = pygame.transform.rotate(scenery[2], 0)
             if 'left_bottom' in tilemap:
-                return pygame.transform.rotate(scenery[2], 90)
+                scenery_tile = pygame.transform.rotate(scenery[2], 90)
             if 'right_bottom' in tilemap:
-                return pygame.transform.rotate(scenery[2], 180)
+                scenery_tile = pygame.transform.rotate(scenery[2], 180)
             if 'right_top' in tilemap:
-                return pygame.transform.rotate(scenery[2], 270)
+                scenery_tile = pygame.transform.rotate(scenery[2], 270)
     if 'ground' in tilemap:
-        return pygame.transform.rotate(scenery[3], 0)
+        scenery_tile = pygame.transform.rotate(scenery[3], 0)
     if 'void' in tilemap:
-        return pygame.transform.rotate(scenery[4], 0)
+        scenery_tile = pygame.transform.rotate(scenery[4], 0)
+    return scenery_tile
+
+def create_base_stage(sface):
+    '''Função que gera o mapa mais básico do jogo'''
+    panel = sface.get_surface()                                       # Painel de exibição do jogo
+    # Desenho do terreno
+    size_x = sface.get_size()[0] // BORDER
+    size_y = sface.get_size()[1] // BORDER
+    for line in range(size_x):
+        if (size_x - 1) > line >= 1:
+            for column in range(size_y):
+                if (size_y - 1) > column >= 1:
+                    panel.blit(get_scenery_tile('ground'), (line * BORDER, column * BORDER))
+    # Desenho das bordas
+    panel.blit(get_scenery_tile('corner_out_left_top'), (0, 0))
+    panel.blit(get_scenery_tile('corner_out_left_bottom'), (0, 560))
+    panel.blit(get_scenery_tile('corner_out_right_top'), (760, 0))
+    panel.blit(get_scenery_tile('corner_out_right_bottom'), (760, 560))
+    for line in range(BORDER, sface.get_size()[0] - BORDER, BORDER):
+        panel.blit(get_scenery_tile('border_out_top'), (line, 0))
+        panel.blit(get_scenery_tile('border_out_bottom'), (line, 560))
+    for column in range(BORDER, sface.get_size()[1] - BORDER, BORDER):
+        panel.blit(get_scenery_tile('border_out_left'), (0, column))
+        panel.blit(get_scenery_tile('border_out_right'), (760, column))
+
+def create_obstacles(sface, num_obstacles):
+    '''Função que gera os obstáculos da fase'''
+    panel = sface.get_surface()                                       # Painel de exibição do jogo
+    # Criação dos obstáculos
+    obstacles = []
+    for qty in range(1, num_obstacles):
+        size = random.randint(2, 10)
+        direction = random.randint(0, 1)
+        if direction == 0:
+            position = (
+                (random.randint(60, sface.get_size()[0] - 100 - (size * BORDER)) // 10) * 10,
+                (random.randint(60, sface.get_size()[1] - 100) // 10) * 10
+            )
+        if direction == 1:
+            position = (
+                (random.randint(60, sface.get_size()[0] - 100) // 10) * 10,
+                (random.randint(60, sface.get_size()[1] - 100 - (size * BORDER)) // 10) * 10
+            )
+        handicap = (position, size, direction)
+        obstacles.insert(qty, handicap)
+    # Desenho dos obstáculos
+    for num, obstacle in enumerate(obstacles):
+        if obstacle[2] == 0:
+            panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + BORDER))
+            for iterator in range(1, obstacle[1] + 1):
+                panel.blit(get_scenery_tile('border_in_top'), (obstacle[0][0] + (iterator * BORDER), obstacle[0][1]))
+                panel.blit(get_scenery_tile('border_in_bottom'), (obstacle[0][0] + (iterator * BORDER), obstacle[0][1] + BORDER))
+            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + (iterator * BORDER) + BORDER, obstacle[0][1]))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + (iterator * BORDER) + BORDER, obstacle[0][1] + BORDER))
+        if obstacle[2] == 1:
+            panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
+            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + BORDER, obstacle[0][1]))
+            for iterator in range(1, obstacle[1] + 1):
+                panel.blit(get_scenery_tile('border_in_left'), (obstacle[0][0], obstacle[0][1] + (iterator * BORDER)))
+                panel.blit(get_scenery_tile('border_in_right'), (obstacle[0][0] + BORDER, obstacle[0][1] + (iterator * BORDER)))
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * BORDER) + BORDER))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + BORDER, obstacle[0][1] + (iterator * BORDER) + BORDER))
+        print(num, obstacle)
+    # Criação da matriz de navegação do jogo
+    size_x = sface.get_size()[0] // BLOCKS
+    size_y = sface.get_size()[1] // BLOCKS
+    for line in range(size_x):
+        if (size_x - 1) > line >= 1:
+            for column in range(size_y):
+                if (size_y - 1) > column >= 1:
+                    pygame.draw.rect(
+                        panel,
+                        (255, 0, 0),
+                        (line * BLOCKS, column * BLOCKS, BLOCKS, BLOCKS),
+                        1
+                    )
 
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
-    panel = sface.get_surface()                                       # Painel de exibição do jogo
-    panel.fill((0, 0, 0))                                             # Desenha uma tela preta
-    blocks = 20
-    border = blocks * 2
+    create_base_stage(sface)
     if stage == 0:                                                    # Define a Tela de início
-        # Desenho das bordas
-        panel.blit(get_scenery_tile('corner_out_left_top'), (0, 0))
-        panel.blit(get_scenery_tile('corner_out_left_bottom'), (0, 560))
-        panel.blit(get_scenery_tile('corner_out_right_top'), (760, 0))
-        panel.blit(get_scenery_tile('corner_out_right_bottom'), (760, 560))
-        for line in range(border, sface.get_size()[0] - border, border):
-            panel.blit(get_scenery_tile('border_out_top'), (line, 0))
-            panel.blit(get_scenery_tile('border_out_bottom'), (line, 560))
-        for column in range(border, sface.get_size()[1] - border, border):
-            panel.blit(get_scenery_tile('border_out_left'), (0, column))
-            panel.blit(get_scenery_tile('border_out_right'), (760, column))
-        # Criação dos obstáculos
-        objects = []
-        for qty in range(1, random.randint(2, 5)):
-            size = random.randint(2, 10)
-            direction = random.randint(0, 1)
-            if direction == 0:
-                position = (
-                    (random.randint(60, sface.get_size()[0] - 100 - (size * border)) // 10) * 10,
-                    (random.randint(60, sface.get_size()[1] - 100) // 10) * 10
-                )
-            if direction == 1:
-                position = (
-                    (random.randint(60, sface.get_size()[0] - 100) // 10) * 10,
-                    (random.randint(60, sface.get_size()[1] - 100 - (size * border)) // 10) * 10
-                )
-            handicap = (position, size, direction)
-            objects.insert(qty, handicap)
-        # Desenho dos obstáculos
-        for num, obstacle in enumerate(objects):
-            if obstacle[2] == 0:
-                panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-                panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + 40))
-                for iterator in range(1, obstacle[1] + 1):
-                    panel.blit(get_scenery_tile('border_in_top'), (obstacle[0][0] + (iterator * 40), obstacle[0][1]))
-                    panel.blit(get_scenery_tile('border_in_bottom'), (obstacle[0][0] + (iterator * 40), obstacle[0][1] + 40))
-                panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + (iterator * 40) + 40, obstacle[0][1]))
-                panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + (iterator * 40) + 40, obstacle[0][1] + 40))
-            if obstacle[2] == 1:
-                panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-                panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + 40, obstacle[0][1]))
-                for iterator in range(1, obstacle[1] + 1):
-                    panel.blit(get_scenery_tile('border_in_left'), (obstacle[0][0], obstacle[0][1] + (iterator * 40)))
-                    panel.blit(get_scenery_tile('border_in_right'), (obstacle[0][0] + 40, obstacle[0][1] + (iterator * 40)))
-                panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * 40) + 40))
-                panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + 40, obstacle[0][1] + (iterator * 40) + 40))
-            print(num, obstacle)
-        # Criação da matriz de navegação do jogo
-        size_y = sface.get_size()[1] // 10
-        size_x = sface.get_size()[0] // 10
-        for j in range(size_y):
-            if (size_y - 2) > j >= 2:
-                for i in range(size_x):
-                    if (size_x - 2) > i >= 2:
-                        pygame.draw.rect(
-                            panel,
-                            (255, 0, 0),
-                            (i * 10, j * 10, 10, 10),
-                            1
-                        )
+        create_obstacles(sface, random.randint(2, 6))
 
 def close_game():
     '''Função que encerra o jogo'''
