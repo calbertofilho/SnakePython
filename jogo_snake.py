@@ -53,7 +53,7 @@ def main():
     while True:
 
         clock.tick(15) #Controle da velocidade do jogo
-
+ 
         #Controle dos eventos que estão acontecendo no jogo
         for event in pygame.event.get():
             if event.type == QUIT:       #Evento de clicar no 'X' da janela
