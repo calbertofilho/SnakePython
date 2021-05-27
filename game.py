@@ -12,14 +12,14 @@ Atualizado em: 25/05/2021
 import os
 import random
 import sys
+from threading import Timer
 import pygame
 from pygame.constants import (
     QUIT, KEYDOWN,
-    K_ESCAPE, K_SPACE, K_PAUSE
-    #K_UP, K_DOWN, K_LEFT, K_RIGHT
+    K_ESCAPE, K_SPACE
+    #K_UP, K_DOWN, K_LEFT, K_RIGHT, K_PAUSE
 )
 #from pygame.locals import *
-from threading import Timer
 
 # Constantes
 BASE_DIR = os.path.dirname(__file__)                                  # Diretorio do jogo
@@ -34,6 +34,7 @@ SNAKE = None                                                          # TileMap 
 RABBIT = None                                                         # Frames da animação do coelho
 BGM = None                                                            # Músicas de fundo
 FX = None                                                             # Efeitos
+MAP = []                                                              # Mapa dos objetos da fase
 # Definições de áudio
 VOLUME_FX = 0.3                                                       # Volume dos efeitos especiais
 VOLUME_BGM = 0.6                                                      # Volume da música de fundo
@@ -133,12 +134,14 @@ def populate_assets():
     )
 
 def play_bgm(track):
+    '''Função para executar a música de fundo do jogo'''
     if not pygame.mixer.music.get_busy():
         pygame.mixer.music.load(BGM[track])
         pygame.mixer.music.set_volume(VOLUME_BGM)
         pygame.mixer.music.play(loops = -1)
 
 def pause_bgm(state):
+    '''Função para suspender e resumir a música de fundo do jogo'''
     if pygame.mixer.music.get_busy():
         if state is True:
             pygame.mixer.music.pause()
@@ -147,6 +150,7 @@ def pause_bgm(state):
             pygame.mixer.music.unpause()
 
 def stop_bgm(delay):
+    '''Função para para a música de fundo do jogo'''
     pygame.mixer.music.fadeout(delay)
     Timer(delay / 1000, pygame.mixer.music.stop()).start()
 
@@ -199,26 +203,52 @@ def get_scenery_tile(tilemap):
 
 def create_base_stage(sface):
     '''Função que gera o mapa mais básico do jogo'''
-    panel = sface.get_surface()                                       # Painel de exibição do jogo
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
     # Desenho do terreno
     size_x = sface.get_size()[0] // TILES
     size_y = sface.get_size()[1] // TILES
-    for line in range(size_x):
-        if (size_x - 1) > line >= 1:
-            for column in range(size_y):
-                if (size_y - 1) > column >= 1:
-                    panel.blit(get_scenery_tile('ground'), (line * TILES, column * TILES))
-    # Desenho das bordas
-    panel.blit(get_scenery_tile('corner_out_left_top'), (0, 0))
-    panel.blit(get_scenery_tile('corner_out_left_bottom'), (0, 560))
-    panel.blit(get_scenery_tile('corner_out_right_top'), (760, 0))
-    panel.blit(get_scenery_tile('corner_out_right_bottom'), (760, 560))
-    for line in range(TILES, sface.get_size()[0] - TILES, TILES):
-        panel.blit(get_scenery_tile('border_out_top'), (line, 0))
-        panel.blit(get_scenery_tile('border_out_bottom'), (line, 560))
-    for column in range(TILES, sface.get_size()[1] - TILES, TILES):
-        panel.blit(get_scenery_tile('border_out_left'), (0, column))
-        panel.blit(get_scenery_tile('border_out_right'), (760, column))
+    for column in range(size_x):                                     # Representação do chão
+        for row in range(size_y):
+            panel.blit(get_scenery_tile('ground'), (column * TILES, row * TILES))
+    # Desenho das cantos                                             # Representação dos cantos
+    panel.blit(get_scenery_tile('corner_out_left_top'), (0, 0))      # Externo inferior esquerdo
+    panel.blit(get_scenery_tile('corner_out_left_bottom'), (0, 560)) # Externo inferior esquerdo
+    panel.blit(get_scenery_tile('corner_out_right_top'), (760, 0))   # Externo superior direito
+    panel.blit(get_scenery_tile('corner_out_right_bottom'), (760, 560)) # Externo inferior direito
+    for row in range(TILES, sface.get_size()[0] - TILES, TILES):    # Representação das bordas
+        panel.blit(get_scenery_tile('border_out_top'), (row, 0))    # Externa superior
+        panel.blit(get_scenery_tile('border_out_bottom'), (row, 560)) # Externa inferior
+    for column in range(TILES, sface.get_size()[1] - TILES, TILES):  # Representação das laterais
+        panel.blit(get_scenery_tile('border_out_left'), (0, column)) # Lateral externa esquerda
+        panel.blit(get_scenery_tile('border_out_right'), (760, column)) # Lateral externa direita
+    # Criação da matriz com o mapa de navegação dos obstáculos
+    for row in range(size_y * 2):                                    # Representação do chão
+        MAP.append([0] * (size_x * 2))                               # Preenchimento com zeros
+    MAP[0][0] = 1
+    MAP[580 // BLOCKS][0] = 1
+    MAP[0][780 // BLOCKS] = 1
+    MAP[580 // BLOCKS][780 // BLOCKS] = 1
+    for row in range(BLOCKS, sface.get_size()[0] - BLOCKS, BLOCKS):
+        MAP[0][row // BLOCKS] = 1
+        MAP[580 // BLOCKS][row // BLOCKS] = 1
+    for column in range(BLOCKS, sface.get_size()[1] - BLOCKS, BLOCKS):
+        MAP[column // BLOCKS][0] = 1
+        MAP[column // BLOCKS][780 // BLOCKS] = 1
+
+def show_matrix(sface):
+    '''Função que desenha na tela toda a matriz de obstáculos do jogo'''
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
+    size_x = sface.get_size()[0] // BLOCKS
+    size_y = sface.get_size()[1] // BLOCKS
+    for row in range(size_y):
+        for column in range(size_x):
+            fill = 0 if MAP[row][column] == 1 else 1
+            pygame.draw.rect(
+                panel,
+                (255, 0, 0),
+                (column * BLOCKS, row * BLOCKS, BLOCKS, BLOCKS),
+                fill
+            )
 
 def create_obstacles(sface, num_obstacles):
     '''Função que gera os obstáculos da fase'''
@@ -259,26 +289,22 @@ def create_obstacles(sface, num_obstacles):
             panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * TILES) + TILES))
             panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + TILES, obstacle[0][1] + (iterator * TILES) + TILES))
         print(num, obstacle)
-    # Criação da matriz de navegação do jogo
-    size_x = sface.get_size()[0] // BLOCKS
-    size_y = sface.get_size()[1] // BLOCKS
-    for line in range(size_x):
-        if (size_x - 1) > line >= 1:
-            for column in range(size_y):
-                if (size_y - 1) > column >= 1:
-                    pygame.draw.rect(
-                        panel,
-                        (255, 0, 0),
-                        (line * BLOCKS, column * BLOCKS, BLOCKS, BLOCKS),
-                        1
-                    )
+    # Adição dos obstáculos na matriz de navegação do jogo
+    # Desenha a matriz na tela
+    show_matrix(sface)
+
+def splash_screen(sface):
+    '''Função que faz a animação da tela de abertura do jogo'''
+    show_matrix(sface)
 
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
     create_base_stage(sface)
     play_bgm(stage)
     if stage == 0:                                                    # Define a Tela de início
-        create_obstacles(sface, random.randint(2, 6))
+        splash_screen(sface)
+    else:
+        create_obstacles(sface, (stage + 1))
 
 def close_game():
     '''Função que encerra o jogo'''
@@ -300,10 +326,8 @@ def main():
         screen.update()
         commands = pygame.key.get_pressed()
         if commands[K_SPACE]:
-            start = False
-        if commands[K_PAUSE]:
             stop_bgm(FADEOUT_BGM)
-
+main()
 try:
     while True:
         main()
