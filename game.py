@@ -16,8 +16,8 @@ from threading import Timer
 import pygame
 from pygame.constants import (
     QUIT, KEYDOWN,
-    K_ESCAPE, K_SPACE
-    #K_UP, K_DOWN, K_LEFT, K_RIGHT, K_PAUSE
+    K_ESCAPE, K_SPACE, K_PAUSE,
+    K_UP, K_DOWN, K_LEFT, K_RIGHT
 )
 #from pygame.locals import *
 
@@ -60,6 +60,11 @@ class Screen():
             if event.type == KEYDOWN:                                 # Evento: Pressionar tecla
                 if event.key == K_ESCAPE:                             # Teste se a tecla é "ESC"
                     close_game()                                      # Chamada da função de fechar
+                if event.key == K_PAUSE:                              # Teste se a tecla é "PAUSE"
+                    pause_game(self, True)                            # Chamada da função de pausar
+                if event.key == K_SPACE:
+                    level = random.randint(1, 5)
+                    create_level(self, level)
         pygame.display.update()                                       # Atualização de tela
     def get_surface(self):
         '''Método que retorna o painel de exibição dos objetos da janela'''
@@ -270,24 +275,28 @@ def create_obstacles(sface, num_obstacles):
             )
         handicap = (position, size, direction)
         obstacles.insert(qty, handicap)
+    print(num_obstacles - 1)
     # Desenho dos obstáculos
     for num, obstacle in enumerate(obstacles):
-        if obstacle[2] == 0:
-            panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + TILES))
-            for iterator in range(1, obstacle[1] + 1):
-                panel.blit(get_scenery_tile('border_in_top'), (obstacle[0][0] + (iterator * TILES), obstacle[0][1]))
-                panel.blit(get_scenery_tile('border_in_bottom'), (obstacle[0][0] + (iterator * TILES), obstacle[0][1] + TILES))
-            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + (iterator * TILES) + TILES, obstacle[0][1]))
-            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + (iterator * TILES) + TILES, obstacle[0][1] + TILES))
-        if obstacle[2] == 1:
-            panel.blit(get_scenery_tile('corner_in_left_top'), obstacle[0])
-            panel.blit(get_scenery_tile('corner_in_right_top'), (obstacle[0][0] + TILES, obstacle[0][1]))
-            for iterator in range(1, obstacle[1] + 1):
-                panel.blit(get_scenery_tile('border_in_left'), (obstacle[0][0], obstacle[0][1] + (iterator * TILES)))
-                panel.blit(get_scenery_tile('border_in_right'), (obstacle[0][0] + TILES, obstacle[0][1] + (iterator * TILES)))
-            panel.blit(get_scenery_tile('corner_in_left_bottom'), (obstacle[0][0], obstacle[0][1] + (iterator * TILES) + TILES))
-            panel.blit(get_scenery_tile('corner_in_right_bottom'), (obstacle[0][0] + TILES, obstacle[0][1] + (iterator * TILES) + TILES))
+        position = obstacle[0]
+        size = obstacle[1]
+        direction = obstacle[2]
+        if direction == 0:
+            panel.blit(get_scenery_tile('corner_in_left_top'), position)
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (position[0], position[1] + TILES))
+            for iterator in range(1, size + 1):
+                panel.blit(get_scenery_tile('border_in_top'), (position[0] + (iterator * TILES), position[1]))
+                panel.blit(get_scenery_tile('border_in_bottom'), (position[0] + (iterator * TILES), position[1] + TILES))
+            panel.blit(get_scenery_tile('corner_in_right_top'), (position[0] + (iterator * TILES) + TILES, position[1]))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (position[0] + (iterator * TILES) + TILES, position[1] + TILES))
+        if direction == 1:
+            panel.blit(get_scenery_tile('corner_in_left_top'), position)
+            panel.blit(get_scenery_tile('corner_in_right_top'), (position[0] + TILES, position[1]))
+            for iterator in range(1, size + 1):
+                panel.blit(get_scenery_tile('border_in_left'), (position[0], position[1] + (iterator * TILES)))
+                panel.blit(get_scenery_tile('border_in_right'), (position[0] + TILES, position[1] + (iterator * TILES)))
+            panel.blit(get_scenery_tile('corner_in_left_bottom'), (position[0], position[1] + (iterator * TILES) + TILES))
+            panel.blit(get_scenery_tile('corner_in_right_bottom'), (position[0] + TILES, position[1] + (iterator * TILES) + TILES))
         print(num, obstacle)
     # Adição dos obstáculos na matriz de navegação do jogo
     # Desenha a matriz na tela
@@ -305,6 +314,23 @@ def create_level(sface, stage):
         splash_screen(sface)
     else:
         create_obstacles(sface, (stage + 1))
+
+def pause_game(sface, state):
+    pause_bgm(state)
+    panel = sface.get_surface()                                       # Painel de exibição do jogo
+    while state:
+        panel.fill((0, 0, 0))
+        # Exibir a mensagem de pause no centro da tela
+        for event in pygame.event.get():
+            # Evento que identifica a tecla pressionada
+            if event.type == KEYDOWN:
+                # Teste para saber se a tecla é "ESCAPE"
+                if event.key == K_ESCAPE:
+                    close_game()
+                # Teste para saber se a tecla é "PAUSE"
+                if event.key == K_PAUSE:
+                    state = False
+        pygame.display.update()
 
 def close_game():
     '''Função que encerra o jogo'''
@@ -325,9 +351,15 @@ def main():
         clock.tick(FPS)
         screen.update()
         commands = pygame.key.get_pressed()
-        if commands[K_SPACE]:
-            stop_bgm(FADEOUT_BGM)
-main()
+        if commands[K_UP]:
+            pass
+        if commands[K_DOWN]:
+            pass
+        if commands[K_LEFT]:
+            pass
+        if commands[K_RIGHT]:
+            pass
+
 try:
     while True:
         main()
