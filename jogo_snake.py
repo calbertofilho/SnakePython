@@ -14,16 +14,17 @@ import pygame
 #Constantes do jogo
 WIDTH = 640  #Largura da tela
 HEIGHT = 480 #Altura da tela
+BLOCKS = 20  #Tamanho de cada bloco da tela
 UP = 0       #Sinalizador do sentido 'para cima'
 RIGHT = 1    #Sinalizador do sentido 'para a direta'
 DOWN = 2     #Sinalizador do sentido 'para baixo'
 LEFT = 3     #Sinalizador do sentido 'para a esquerda'
 
 def on_grid_random():
-    '''Função para gerar as posições aleatórias de criação da maçã, sempre em múltiplos de 10'''
-    pos_x = random.randint(0, 630)          #Gera um número aleatório para a posição 'X'
-    pos_y = random.randint(0, 470)          #Gera um número aleatório para a posição 'Y'
-    return (pos_x // 10 * 10, pos_y // 10 * 10) #Converte para múltiplos de 10 e retorna o resultado
+    '''Função para gerar as posições aleatórias de criação da maçã, sempre em múltiplos de BLOCKS'''
+    pos_x = random.randint(0, WIDTH - BLOCKS)          #Gera um número aleatório para a posição 'X'
+    pos_y = random.randint(0, HEIGHT - BLOCKS)          #Gera um número aleatório para a posição 'Y'
+    return (pos_x // BLOCKS * BLOCKS, pos_y // BLOCKS * BLOCKS) #Converte para múltiplos de BLOCKS e retorna o resultado
 
 def collision(pos_1, pos_2):
     '''Função para detectar colisão'''
@@ -36,13 +37,13 @@ def main():
     pygame.display.set_caption('Jogo Um - SNAKE')     #Título do jogo
 
     #Criando a cobra
-    snake = [(200, 200), (210, 200), (220, 200)] #Definindo o tamanho e a posição inicial
-    snake_skin = pygame.Surface((10, 10))        #Definindo o formato
+    snake = [(200, 200), (200 + BLOCKS, 200), (200 + (BLOCKS * 2), 200)] #Definindo o tamanho e a posição inicial
+    snake_skin = pygame.Surface((BLOCKS, BLOCKS))        #Definindo o formato
     snake_skin.fill((255, 255, 255))             #Preenchendo com a cor branca
     my_direction = LEFT                          #Definindo a direção inicial da cobra
 
     #Criando a maçã
-    apple = pygame.Surface((10, 10)) #Definindo o tamanho da maçã
+    apple = pygame.Surface((BLOCKS, BLOCKS)) #Definindo o tamanho da maçã
     apple.fill((255, 0, 0))          #Preenchendo com a cor vermelha
     apple_pos = on_grid_random()     #Definido a posição inicial da maçã
 
@@ -75,19 +76,30 @@ def main():
 
         #Setando a direção que a cobra anda no cenário
         if my_direction == UP:                         #Se for para cima
-            snake[0] = (snake[0][0], snake[0][1] - 10) #   mantém o 'X' e diminui uma posição no 'Y'
+            snake[0] = (snake[0][0], snake[0][1] - BLOCKS) #   mantém o 'X' e diminui uma posição no 'Y'
         if my_direction == DOWN:                       #Se for para baixo
-            snake[0] = (snake[0][0], snake[0][1] + 10) #   mantém o 'X' e aumenta uma posição no 'Y'
+            snake[0] = (snake[0][0], snake[0][1] + BLOCKS) #   mantém o 'X' e aumenta uma posição no 'Y'
         if my_direction == LEFT:                       #Se for para a esquerda
-            snake[0] = (snake[0][0] - 10, snake[0][1]) #   diminui uma posição no 'X' e mantém o 'Y'
+            snake[0] = (snake[0][0] - BLOCKS, snake[0][1]) #   diminui uma posição no 'X' e mantém o 'Y'
         if my_direction == RIGHT:                      #Se for para a direita
-            snake[0] = (snake[0][0] + 10, snake[0][1]) #   aumenta uma posição no 'X' e mantém o 'Y'
+            snake[0] = (snake[0][0] + BLOCKS, snake[0][1]) #   aumenta uma posição no 'X' e mantém o 'Y'
         #Fazendo o corpo acompanhar a cabeça da cobra
         for i in range(len(snake) - 1, 0, -1):            #Para cada posição da cobra
             snake[i] = (snake[i - 1][0], snake[i - 1][1]) #   a última posição passa pra penúltima
 
         #Plotando na tela os objetos do jogo
         screen.fill((0, 0, 0))           #Limpa a tela
+        #Representação da matriz do jogo
+        size_x = WIDTH // BLOCKS
+        size_y = HEIGHT // BLOCKS
+        for row in range(size_y):
+            for column in range(size_x):
+                pygame.draw.rect(
+                    screen,
+                    (255, 0, 0),
+                    (column * BLOCKS, row * BLOCKS, BLOCKS, BLOCKS),
+                    1
+                )
         screen.blit(apple, apple_pos)    #Representação da maçã na tela
         for pos in snake:                #Para cada posição da cobra
             screen.blit(snake_skin, pos) #   representa na tela os quadrados que compõe a cobra
