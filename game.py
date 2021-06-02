@@ -26,8 +26,9 @@ BASE_DIR = os.path.dirname(__file__)                                 # Diretorio
 VERSION = 'v1.0'                                                     # Versão do jogo
 FPS = 15                                                             # Frames por segundo
 BLOCKS = 20                                                          # Tamanho do bloco da matriz
+ANIMALS_SCALE = (BLOCKS, BLOCKS)                                     # Escala criação dos animais
 TILES = BLOCKS * 2                                                   # Tamanho das imagens tiles
-SCALE = (TILES, TILES)                                               # Escala criação dos TileMaps
+SCENERY_SCALE = (TILES, TILES)                                       # Escala criação dos TileMaps
 # Ativos
 SCENERY = None                                                       # TileMap do cenário
 SNAKE = None                                                         # TileMap da cobra
@@ -77,11 +78,18 @@ class Snake(pygame.sprite.Sprite):
     '''Classe que representa a cobra'''
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.my_direction = 'Left'
+        self.image = SNAKE[0]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.my_direction = 'Stop'
     def update(self):
         '''Método que representa o comportamento da cobra a cada iteração do jogo'''
+    def set_direction(self, direction):
+        '''Método que seta a direção da cabeça da cobra'''
+        self.my_direction = direction
     def get_direction(self):
         '''Método que retorna a direção da cabeça da cobra'''
+        return self.my_direction
 
 class Rabbit(pygame.sprite.Sprite):
     '''Classe que representa o coelho'''
@@ -95,6 +103,7 @@ class Rabbit(pygame.sprite.Sprite):
         '''Método que representa o comportamento do coelho a cada iteração do jogo'''
         self.current_image = (self.current_image + 1) % len(RABBIT)
         self.image = RABBIT[self.current_image]
+        time.sleep(0.15)
     def set_position(self, pos_x, pos_y):
         '''Método que posiciona o coelho na tela'''
         self.rect.x = pos_x
@@ -123,25 +132,63 @@ def populate_assets():
     '''Função que inicializa todos os ativos utilizados no jogo'''
     global SCENERY, SNAKE, RABBIT, BGM, FX                           # Indica alteração na variável global
     SCENERY = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/incorner.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/ground.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/void.png'), SCALE)
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/incorner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/ground.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/void.png'), SCENERY_SCALE)
     )
     SNAKE = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/head.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/body.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/curve.png'), SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/tail.png'), SCALE)
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/head.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/body.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/curve.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/tail.png'), ANIMALS_SCALE)
     )
     RABBIT = (
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm3.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm4.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png')
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'), ANIMALS_SCALE)
     )
     BGM = (
         f'{BASE_DIR}/assets/sounds/bgm/main.mid',
@@ -358,8 +405,9 @@ def create_level(sface, stage):
 
 def set_rabbit_position(sface, prey):
     '''Função que posiciona o coelho na matriz'''
-    panel = sface.get_surface()                                      # Painel de exibição do jogo
-    prey.set_position(50, 210)
+    pos_x = random.randint(BLOCKS, sface.get_size()[0] - BLOCKS)     # Gera uma posição aleatória pra 'X'
+    pos_y = random.randint(BLOCKS, sface.get_size()[1] - BLOCKS)     # Gera uma posição aleatória pra 'Y'
+    prey.set_position(pos_x // BLOCKS * BLOCKS, pos_y // BLOCKS * BLOCKS) # Coloca o coelho na posição
 
 def pause_game(sface, state):
     pause_bgm(state)                                                 # Pausa a execução da música
@@ -389,9 +437,11 @@ def main():
     init_libs('low')                                                 # Inicialização dos recursos
     populate_assets()                                                # Carrega os ativos do jogo
     screen = Screen()                                                # Criação da janela
+    predator_group = pygame.sprite.Group()
     snake = Snake()                                                  # Criação da cobra
+    predator_group.add(snake)
     prey_group = pygame.sprite.Group()
-    rabbit = Rabbit()
+    rabbit = Rabbit()                                                # Criação do coelho
     prey_group.add(rabbit)
     level = 0                                                        # Configura pra tela de início
     create_level(screen, level)                                      # Cria a tela selecionada
@@ -401,16 +451,17 @@ def main():
         clock.tick(FPS)                                              # Configura o FPS do jogo
         commands = pygame.key.get_pressed()                          # Armazena os comandos do jogo
         if commands[K_UP]:                                           # Se pressionar a seta pra cima
-            snake.my_direction = 'Up'                                # Indica que a cobra vai para cima
+            snake.set_direction('Up')                                # Indica que a cobra vai para cima
         if commands[K_DOWN]:                                         # Se pressionar a seta pra baixo
-            snake.my_direction = 'Down'                              # Indica que a cobra vai para baixo
+            snake.set_direction('Down')                              # Indica que a cobra vai para baixo
         if commands[K_LEFT]:                                         # Se pressionar a seta da esquerda
-            snake.my_direction = 'Left'                              # Indica que a cobra vai para esquerda
+            snake.set_direction('Left')                              # Indica que a cobra vai para esquerda
         if commands[K_RIGHT]:                                        # Se pressionar a seta da direita
-            snake.my_direction = 'Right'                             # Indica que a cobra vai para direita
+            snake.set_direction('Right')                             # Indica que a cobra vai para direita
         screen.update()                                              # Atualiza a tela
         snake.update()                                               # Atualiza a cobra
-        rabbit.update()
+        rabbit.update()                                              # Atualiza o coelho
+        predator_group.draw(screen.get_surface())
         prey_group.draw(screen.get_surface())
 
 try:                                                                 # Tenta executar
