@@ -82,14 +82,21 @@ class Snake(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.my_direction = 'Stop'
+        self.body = [(0, 0), (0, 20), (0, 40)]
     def update(self):
         '''Método que representa o comportamento da cobra a cada iteração do jogo'''
+    def set_initial_position(self, position):
+        '''Método que seta a posição inicial da cobra na tela'''
+        self.rect = position
     def set_direction(self, direction):
         '''Método que seta a direção da cabeça da cobra'''
         self.my_direction = direction
     def get_direction(self):
         '''Método que retorna a direção da cabeça da cobra'''
         return self.my_direction
+    def grow_up(self):
+        '''Método que cresce a cobra'''
+        self.body.append((0, 0))
 
 class Rabbit(pygame.sprite.Sprite):
     '''Classe que representa o coelho'''
@@ -103,7 +110,7 @@ class Rabbit(pygame.sprite.Sprite):
         '''Método que representa o comportamento do coelho a cada iteração do jogo'''
         self.current_image = (self.current_image + 1) % len(RABBIT)
         self.image = RABBIT[self.current_image]
-        time.sleep(0.15)
+        wait(0.1)
     def set_position(self, pos_x, pos_y):
         '''Método que posiciona o coelho na tela'''
         self.rect.x = pos_x
@@ -392,7 +399,7 @@ def create_obstacles(sface, num_obstacles):
 
 def splash_screen(sface):
     '''Função que faz a animação da tela de abertura do jogo'''
-    show_matrix(sface, True)                                               # Exibe a matriz na tela
+    show_matrix(sface, False)                                               # Exibe a matriz na tela
 
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
@@ -439,6 +446,7 @@ def main():
     screen = Screen()                                                # Criação da janela
     predator_group = pygame.sprite.Group()
     snake = Snake()                                                  # Criação da cobra
+    snake.set_initial_position((140, 280))
     predator_group.add(snake)
     prey_group = pygame.sprite.Group()
     rabbit = Rabbit()                                                # Criação do coelho
