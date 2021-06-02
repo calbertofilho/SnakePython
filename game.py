@@ -4,7 +4,7 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 31/05/2021
+Atualizado em: 01/06/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=no-name-in-module
@@ -87,8 +87,21 @@ class Rabbit(pygame.sprite.Sprite):
     '''Classe que representa o coelho'''
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.current_image = 0
+        self.image = RABBIT[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
     def update(self):
         '''Método que representa o comportamento do coelho a cada iteração do jogo'''
+        self.current_image = (self.current_image + 1) % len(RABBIT)
+        self.image = RABBIT[self.current_image]
+    def set_position(self, pos_x, pos_y):
+        '''Método que posiciona o coelho na tela'''
+        self.rect.x = pos_x
+        self.rect.y = pos_y
+    def get_position(self):
+        '''Método que retorna a posição do coelho na tela'''
+        return self.rect
 
 def init_libs(quality):
     '''Função que inicializa as biliotecas utilizadas no jogo'''
@@ -123,7 +136,12 @@ def populate_assets():
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/snake/tail.png'), SCALE)
     )
     RABBIT = (
-        # Carregar os frames da animação do coelho aqui
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm1.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm2.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm3.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm4.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm5.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/rabbit/frm6.png')
     )
     BGM = (
         f'{BASE_DIR}/assets/sounds/bgm/main.mid',
@@ -215,6 +233,34 @@ def get_scenery_tile(tilemap):
         scenery_tile = pygame.transform.rotate(SCENERY[4], 0)
     return scenery_tile
 
+def show_matrix(sface, show_coordinates):
+    '''Função que desenha na tela toda a matriz de obstáculos do jogo'''
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
+    size_x = sface.get_size()[0] // BLOCKS                           # Tamanho de colunas na matriz
+    size_y = sface.get_size()[1] // BLOCKS                           # Tamanho de linhas na matriz
+    sysfont = pygame.font.get_default_font()
+    font = pygame.font.SysFont(sysfont, 14)
+    for row in range(size_y):                                        # Para cada linha da matriz
+        for column in range(size_x):                                 # Para cada coluna da matriz
+            fill = -1 if MAP[row][column] == 1 else 1                # Representa a área de navegação
+            pygame.draw.rect(                                        # Desenha o retângulo na posição
+                panel,                                               # Painel de exibição do jogo
+                (255, 0, 0),                                         # Cor: Verde
+                (column * BLOCKS, row * BLOCKS, BLOCKS, BLOCKS),     # Posição na tela
+                fill                                                 # Tipo de preenchimento
+            )
+            if show_coordinates is True:                             # Exibir posição de cada célula
+                img = font.render(f'{row * BLOCKS}', True, (255, 255, 255)) # Define a linha
+                panel.blit(img,
+                                (column * BLOCKS,
+                                row * BLOCKS)
+                )                                                        # Exibe a posição da linha
+                img = font.render(f'{column * BLOCKS}', True, (255, 255, 255)) # Define a coluna
+                panel.blit(img,
+                                ((column * BLOCKS) + (BLOCKS - img.get_width()),
+                                (row * BLOCKS) + img.get_height())
+                )                                                        # Exibe a posição da coluna
+
 def create_base_stage(sface):
     '''Função que gera o mapa mais básico do jogo'''
     panel = sface.get_surface()                                      # Painel de exibição do jogo
@@ -236,9 +282,11 @@ def create_base_stage(sface):
         panel.blit(get_scenery_tile('border_out_left'), (0, column)) # Lateral externa esquerda
         panel.blit(get_scenery_tile('border_out_right'), (760, column)) # Lateral externa direita
     # Criação da matriz com o mapa de navegação dos obstáculos
+    # Representação do terreno, espaços vazios
     for row in range(size_y * 2):                                    # Representação do chão
         MAP.append([0] * (size_x * 2))                               # Preenchimento com zeros
-    MAP[0][0] = 1                      # Representação dos cantos    # Externo superior esquerdo
+    # Representação dos cantos
+    MAP[0][0] = 1                                                    # Externo superior esquerdo
     MAP[580 // BLOCKS][0] = 1                                        # Externo inferior esquerdo
     MAP[0][780 // BLOCKS] = 1                                        # Externo superior direito
     MAP[580 // BLOCKS][780 // BLOCKS] = 1                            # Externo inferior direito
@@ -249,51 +297,36 @@ def create_base_stage(sface):
         MAP[column // BLOCKS][0] = 1                                 # Lateral externa esquerda
         MAP[column // BLOCKS][780 // BLOCKS] = 1                     # Lateral externa direita
 
-def show_matrix(sface):
-    '''Função que desenha na tela toda a matriz de obstáculos do jogo'''
-    panel = sface.get_surface()                                      # Painel de exibição do jogo
-    size_x = sface.get_size()[0] // BLOCKS                           # Tamanho de colunas da matriz
-    size_y = sface.get_size()[1] // BLOCKS                           # Tamanho de linhas da matriz
-    for row in range(size_y):                                        # Para cada linha da matriz
-        for column in range(size_x):                                 # Para cada coluna da matriz
-            fill = 0 if MAP[row][column] == 1 else 1                 # Representa o preenchimento
-            pygame.draw.rect(                                        # Desenha o retângulo na posição
-                panel,                                               # Painel de exibição do jogo
-                (255, 0, 0),                                         # Cor: Vermelha
-                (column * BLOCKS, row * BLOCKS, BLOCKS, BLOCKS),     # Posição na tela
-                fill                                                 # Tipo de preenchimento
-            )
-
 def create_obstacles(sface, num_obstacles):
     '''Função que gera os obstáculos da fase'''
     panel = sface.get_surface()                                      # Painel de exibição do jogo
     # Criação dos obstáculos
     obstacles = []
     for qty in range(1, num_obstacles):
-        size = random.randint(2, 10)
+        length = random.randint(2, 10)
         direction = random.randint(0, 1)
         if direction == 0:
             position = (
-                (random.randint(60, sface.get_size()[0] - 100 - (size * TILES)) // 10) * 10,
-                (random.randint(60, sface.get_size()[1] - 100) // 10) * 10
+                (random.randint(60, sface.get_size()[0] - 100 - (length * TILES)) // BLOCKS) * BLOCKS,
+                (random.randint(60, sface.get_size()[1] - 100) // BLOCKS) * BLOCKS
             )
         if direction == 1:
             position = (
-                (random.randint(60, sface.get_size()[0] - 100) // 10) * 10,
-                (random.randint(60, sface.get_size()[1] - 100 - (size * TILES)) // 10) * 10
+                (random.randint(60, sface.get_size()[0] - 100) // BLOCKS) * BLOCKS,
+                (random.randint(60, sface.get_size()[1] - 100 - (length * TILES)) // BLOCKS) * BLOCKS
             )
-        handicap = (position, size, direction)
+        handicap = (position, length, direction)
         obstacles.insert(qty, handicap)
     print(num_obstacles - 1)
     # Desenho dos obstáculos
     for num, obstacle in enumerate(obstacles):
         position = obstacle[0]
-        size = obstacle[1]
+        length = obstacle[1]
         direction = obstacle[2]
         if direction == 0:
             panel.blit(get_scenery_tile('corner_in_left_top'), position)
             panel.blit(get_scenery_tile('corner_in_left_bottom'), (position[0], position[1] + TILES))
-            for iterator in range(1, size + 1):
+            for iterator in range(1, length + 1):
                 panel.blit(get_scenery_tile('border_in_top'), (position[0] + (iterator * TILES), position[1]))
                 panel.blit(get_scenery_tile('border_in_bottom'), (position[0] + (iterator * TILES), position[1] + TILES))
             panel.blit(get_scenery_tile('corner_in_right_top'), (position[0] + (iterator * TILES) + TILES, position[1]))
@@ -301,18 +334,18 @@ def create_obstacles(sface, num_obstacles):
         if direction == 1:
             panel.blit(get_scenery_tile('corner_in_left_top'), position)
             panel.blit(get_scenery_tile('corner_in_right_top'), (position[0] + TILES, position[1]))
-            for iterator in range(1, size + 1):
+            for iterator in range(1, length + 1):
                 panel.blit(get_scenery_tile('border_in_left'), (position[0], position[1] + (iterator * TILES)))
                 panel.blit(get_scenery_tile('border_in_right'), (position[0] + TILES, position[1] + (iterator * TILES)))
             panel.blit(get_scenery_tile('corner_in_left_bottom'), (position[0], position[1] + (iterator * TILES) + TILES))
             panel.blit(get_scenery_tile('corner_in_right_bottom'), (position[0] + TILES, position[1] + (iterator * TILES) + TILES))
         print(num, obstacle)
     # Adição dos obstáculos na matriz de navegação do jogo
-    show_matrix(sface)                                               # Exibe a matriz na tela
+    show_matrix(sface, True)                                               # Exibe a matriz na tela
 
 def splash_screen(sface):
     '''Função que faz a animação da tela de abertura do jogo'''
-    show_matrix(sface)                                               # Exibe a matriz na tela
+    show_matrix(sface, True)                                               # Exibe a matriz na tela
 
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
@@ -322,6 +355,11 @@ def create_level(sface, stage):
         splash_screen(sface)                                         # Chama a tela de abertura
     else:
         create_obstacles(sface, (stage + 1))                         # Cria o nível
+
+def set_rabbit_position(sface, prey):
+    '''Função que posiciona o coelho na matriz'''
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
+    prey.set_position(50, 210)
 
 def pause_game(sface, state):
     pause_bgm(state)                                                 # Pausa a execução da música
@@ -352,8 +390,12 @@ def main():
     populate_assets()                                                # Carrega os ativos do jogo
     screen = Screen()                                                # Criação da janela
     snake = Snake()                                                  # Criação da cobra
+    prey_group = pygame.sprite.Group()
+    rabbit = Rabbit()
+    prey_group.add(rabbit)
     level = 0                                                        # Configura pra tela de início
     create_level(screen, level)                                      # Cria a tela selecionada
+    set_rabbit_position(screen, rabbit)
     start = True                                                     # Dá início a execução do jogo
     while start:                                                     # Enquanto estiver em execução
         clock.tick(FPS)                                              # Configura o FPS do jogo
@@ -368,6 +410,8 @@ def main():
             snake.my_direction = 'Right'                             # Indica que a cobra vai para direita
         screen.update()                                              # Atualiza a tela
         snake.update()                                               # Atualiza a cobra
+        rabbit.update()
+        prey_group.draw(screen.get_surface())
 
 try:                                                                 # Tenta executar
     while True:                                                      # Loop infinito
