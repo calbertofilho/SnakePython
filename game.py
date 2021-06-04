@@ -4,10 +4,12 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 01/06/2021
+Atualizado em: 03/06/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=no-name-in-module
+# pylint: disable=c-extension-no-member
+# pylint: disable=line-too-long
 
 import os
 import random
@@ -30,6 +32,7 @@ ANIMALS_SCALE = (BLOCKS, BLOCKS)                                     # Escala cr
 TILES = BLOCKS * 2                                                   # Tamanho das imagens tiles
 SCENERY_SCALE = (TILES, TILES)                                       # Escala criação dos TileMaps
 # Ativos
+MESSAGES = None                                                      # Mensagens do jogo
 SCENERY = None                                                       # TileMap do cenário
 SNAKE = None                                                         # TileMap da cobra
 RABBIT = None                                                        # Frames da animação do coelho
@@ -59,13 +62,10 @@ class Screen():
             if event.type == QUIT:                                   # Evento: Fechar a janela
                 close_game()                                         # Chamada da função de fechar
             if event.type == KEYDOWN:                                # Evento: Pressionar tecla
-                if event.key == K_ESCAPE:                            # Teste se a tecla é "ESC"
+                if event.key == K_ESCAPE:                            # Testa se a tecla é "ESC"
                     close_game()                                     # Chamada da função de fechar
-                if event.key == K_PAUSE:                             # Teste se a tecla é "PAUSE"
+                if event.key == K_PAUSE:                             # Testa se a tecla é "PAUSE"
                     pause_game(self, True)                           # Chamada da função de pausar
-                if event.key == K_SPACE:
-                    level = random.randint(1, 5)
-                    create_level(self, level)
         pygame.display.update()                                      # Atualização de tela
     def get_surface(self):
         '''Método que retorna o painel de exibição dos objetos da janela'''
@@ -82,7 +82,7 @@ class Snake(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.my_direction = 'Stop'
-        self.body = [(0, 0), (0, 20), (0, 40)]
+        self.body = [(0, 0), (0, BLOCKS), (0, (2 * BLOCKS))]
     def update(self):
         '''Método que representa o comportamento da cobra a cada iteração do jogo'''
     def set_initial_position(self, position):
@@ -137,7 +137,11 @@ def init_libs(quality):
 
 def populate_assets():
     '''Função que inicializa todos os ativos utilizados no jogo'''
-    global SCENERY, SNAKE, RABBIT, BGM, FX                           # Indica alteração na variável global
+    global MESSAGES, SCENERY, SNAKE, RABBIT, BGM, FX                 # Indica alteração na variável global
+    MESSAGES = (
+        pygame.image.load(f'{BASE_DIR}/assets/messages/splash.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/messages/pause.png')
+    )
     SCENERY = (
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/border.png'), SCENERY_SCALE),
         pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/assets/sprites/scenery/corner.png'), SCENERY_SCALE),
@@ -215,7 +219,7 @@ def wait(delay):
     '''Função que atrasa a execução do código por um tempo determinado em segundos'''
     time_to_delay = time.time() + delay                              # Tempo inicial mais o delay
     while time.time() <= time_to_delay:                              # Enquanto não passar o delay
-        None                                                         # Não faz nada
+        pygame.display.update()                                      # Não faz nada
 
 
 def play_bgm(track):
@@ -243,48 +247,46 @@ def stop_bgm(delay):
 def get_scenery_tile(tilemap):
     '''Função que retorna as peças para a montagem do cenário'''
     scenery_tile = None
-    if 'border' in tilemap:
-        if 'out' in tilemap:
-            if 'top' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[0], 0)
-            if 'left' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[0], 90)
-            if 'bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[0], 180)
-            if 'right' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[0], 270)
-        if 'in' in tilemap:
-            if 'top' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 0)
-            if 'left' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 90)
-            if 'bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 180)
-            if 'right' in tilemap:
-                scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 270)
-    if 'corner' in tilemap:
-        if 'out' in tilemap:
-            if 'left_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[1], 0)
-            if 'left_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[1], 90)
-            if 'right_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[1], 180)
-            if 'right_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[1], 270)
-        if 'in' in tilemap:
-            if 'left_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[2], 0)
-            if 'left_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[2], 90)
-            if 'right_bottom' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[2], 180)
-            if 'right_top' in tilemap:
-                scenery_tile = pygame.transform.rotate(SCENERY[2], 270)
-    if 'ground' in tilemap:
-        scenery_tile = pygame.transform.rotate(SCENERY[3], 0)
-    if 'void' in tilemap:
-        scenery_tile = pygame.transform.rotate(SCENERY[4], 0)
+    if 'border_out' in tilemap:
+        if 'top' in tilemap:
+            scenery_tile = SCENERY[0]
+        elif 'left' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[0], 90)
+        elif 'bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[0], 180)
+        elif 'right' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[0], 270)
+    elif 'border_in' in tilemap:
+        if 'top' in tilemap:
+            scenery_tile = pygame.transform.flip(SCENERY[0], False, True)
+        elif 'left' in tilemap:
+            scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 90)
+        elif 'bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 180)
+        elif 'right' in tilemap:
+            scenery_tile = pygame.transform.rotate(pygame.transform.flip(SCENERY[0], False, True), 270)
+    elif 'corner_out' in tilemap:
+        if 'left_top' in tilemap:
+            scenery_tile = SCENERY[1]
+        elif 'left_bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[1], 90)
+        elif 'right_bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[1], 180)
+        elif 'right_top' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[1], 270)
+    elif 'corner_in' in tilemap:
+        if 'left_top' in tilemap:
+            scenery_tile = SCENERY[2]
+        elif 'left_bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[2], 90)
+        elif 'right_bottom' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[2], 180)
+        elif 'right_top' in tilemap:
+            scenery_tile = pygame.transform.rotate(SCENERY[2], 270)
+    elif 'ground' in tilemap:
+        scenery_tile = SCENERY[3]
+    elif 'void' in tilemap:
+        scenery_tile = SCENERY[4]
     return scenery_tile
 
 def show_matrix(sface, show_coordinates):
@@ -395,20 +397,36 @@ def create_obstacles(sface, num_obstacles):
             panel.blit(get_scenery_tile('corner_in_right_bottom'), (position[0] + TILES, position[1] + (iterator * TILES) + TILES))
         print(num, obstacle)
     # Adição dos obstáculos na matriz de navegação do jogo
-    show_matrix(sface, True)                                               # Exibe a matriz na tela
+    show_matrix(sface, True)                                         # Exibe a matriz na tela
 
 def splash_screen(sface):
     '''Função que faz a animação da tela de abertura do jogo'''
-    show_matrix(sface, False)                                               # Exibe a matriz na tela
+    splash = True
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
+    panel.blit(MESSAGES[0], (0, 0))                                  # Exibe a tela de apresentação do jogo
+    while splash:
+        for event in pygame.event.get():                             # Identifica os eventos
+            if event.type == QUIT:                                   # Evento: Fechar a janela
+                close_game()                                         # Chamada da função de fechar
+            if event.type == KEYDOWN:                                # Evento: Pressionar tecla
+                if event.key == K_ESCAPE:                            # Testa se a tecla é "ESC"
+                    close_game()                                     # Chamada da função de fechar
+                if event.key == K_SPACE:                             # Testa se a tecla é "SPACE"
+                    splash = False                                   # Encerra a tela de abertura
+        pygame.display.update()                                      # Atualização de tela
 
 def create_level(sface, stage):
     '''Função que gera os mapas dos níveis do jogo'''
     create_base_stage(sface)                                         # Cria o cenário básico
     play_bgm(stage)                                                  # Inicia a música de fundo
     if stage == 0:
-        splash_screen(sface)                                         # Chama a tela de abertura
-    else:
+        splash_screen(sface)                                  # Chama a tela de abertura
+    elif stage <= 5:
         create_obstacles(sface, (stage + 1))                         # Cria o nível
+    else:
+        # Tela de créditos
+        pass
+    return stage <= 5
 
 def set_rabbit_position(sface, prey):
     '''Função que posiciona o coelho na matriz'''
@@ -417,10 +435,12 @@ def set_rabbit_position(sface, prey):
     prey.set_position(pos_x // BLOCKS * BLOCKS, pos_y // BLOCKS * BLOCKS) # Coloca o coelho na posição
 
 def pause_game(sface, state):
+    '''Função que pausa o jogo'''
     pause_bgm(state)                                                 # Pausa a execução da música
     panel = sface.get_surface()                                      # Painel de exibição do jogo
     while state:                                                     # Enquanto estiver pausado
-        panel.fill((0, 0, 0))                                        # Exibe a mensagem de pause
+        panel.blit(MESSAGES[1], (0, 0))                              # Exibe a mensagem de pause
+        #panel.fill((0, 0, 0))                                        # Exibe uma tela preta
         for event in pygame.event.get():                             # Identifica os eventos
             if event.type == QUIT:                                   # Evento: Fechar a janela
                 close_game()                                         # Chamada da função de fechar
@@ -430,7 +450,7 @@ def pause_game(sface, state):
                 if event.key == K_PAUSE:                             # Teste se a tecla é "PAUSE"
                     state = False                                    # Altera o estado e sai de PAUSE
                     pause_bgm(state)                                 # Reinicia a execução da música
-        sface.update()                                               # Atualização da tela
+        pygame.display.update()                                      # Atualização de tela
 
 def close_game():
     '''Função que encerra o jogo'''
@@ -451,10 +471,10 @@ def main():
     prey_group = pygame.sprite.Group()
     rabbit = Rabbit()                                                # Criação do coelho
     prey_group.add(rabbit)
-    level = 0                                                        # Configura pra tela de início
-    create_level(screen, level)                                      # Cria a tela selecionada
-    set_rabbit_position(screen, rabbit)
-    start = True                                                     # Dá início a execução do jogo
+    create_level(screen, 0)                                          # Cria a tela de início do jogo
+    stop_bgm(1500)                                                   # Para a música
+    set_rabbit_position(screen, rabbit)                              # Posiciona o coelho para dar início ao jogo
+    start = create_level(screen, 1)                                  # Dá início ao jogo
     while start:                                                     # Enquanto estiver em execução
         clock.tick(FPS)                                              # Configura o FPS do jogo
         commands = pygame.key.get_pressed()                          # Armazena os comandos do jogo
@@ -469,8 +489,8 @@ def main():
         screen.update()                                              # Atualiza a tela
         snake.update()                                               # Atualiza a cobra
         rabbit.update()                                              # Atualiza o coelho
-        predator_group.draw(screen.get_surface())
-        prey_group.draw(screen.get_surface())
+        predator_group.draw(screen.get_surface())                    # Atualiza a posição da cobra na tela
+        prey_group.draw(screen.get_surface())                        # Atualiza a animação do coelho na tela
 
 try:                                                                 # Tenta executar
     while True:                                                      # Loop infinito
