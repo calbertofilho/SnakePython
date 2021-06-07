@@ -11,25 +11,232 @@ Atualizado em: 04/06/2021
 # pylint: disable=c-extension-no-member
 # pylint: disable=line-too-long
 
+import os
 import random
+import sys
+import time
 import pygame
 from pygame.constants import (
     QUIT, KEYDOWN,
-    K_ESCAPE, K_SPACE,
+    K_ESCAPE, K_SPACE, K_PAUSE,
     K_UP, K_DOWN, K_LEFT, K_RIGHT
 )
 #from pygame.locals import *
-from libs.functions import (
-    close_game, play_bgm, stop_bgm
-)
-from libs.settings import (
-    SCENERY, BLOCKS, TILES, MAP, MESSAGES, FPS,
-    init_libs, populate_assets
-)
-from libs.Handycap import Handycap
-from libs.Rabbit import Rabbit
-from libs.Snake import Snake
-from libs.Screen import Screen
+
+# Constantes
+BASE_DIR = os.path.dirname(__file__)                                 # Diretorio do jogo
+print(BASE_DIR)
+VERSION = 'v2.0'                                                     # Versão do jogo
+FPS = 15                                                             # Frames por segundo
+BLOCKS = 20                                                          # Tamanho do bloco da matriz
+ANIMALS_SCALE = (BLOCKS, BLOCKS)                                     # Escala criação dos animais
+TILES = BLOCKS * 2                                                   # Tamanho das imagens tiles
+SCENERY_SCALE = (TILES, TILES)                                       # Escala criação dos TileMaps
+# Ativos
+MESSAGES = None                                                      # Mensagens do jogo
+SCENERY = None                                                       # TileMap do cenário
+SNAKE = None                                                         # TileMap da cobra
+RABBIT = None                                                        # Frames da animação do coelho
+BGM = None                                                           # Músicas de fundo
+FX = None                                                            # Efeitos
+MAP = []                                                             # Mapa dos objetos da fase
+# Definições de áudio
+VOLUME_FX = 0.3                                                      # Volume dos efeitos especiais
+VOLUME_BGM = 0.6                                                     # Volume da música de fundo
+FADEOUT_BGM = 1500                                                   # Fade pra parar a música
+
+class Screen():
+    '''Classe que representa a tela do jogo'''
+    def __init__(self):
+        self.width = 800                                             # Comprimento da janela
+        self.height = 600                                            # Altura da janela
+        self.caption = f'SnakePython {VERSION}'                      # Título
+        self.icon_location = f'{BASE_DIR}/res/images/icons/icon.png' # Local do ícone
+        self.surface = pygame.display.set_mode((self.width, self.height)) # Criação da tela
+        pygame.display.set_caption(self.caption)                     # Configuração do título
+        self.icon = pygame.image.load(self.icon_location).convert_alpha() # Criação do ícone
+        pygame.display.set_icon(self.icon)                           # Configuração do ícone
+        os.environ['SDL_VIDEO_CENTERED'] = '1'                       # Centralização no desktop
+    def update(self):
+        '''Método que modela o comportamento da janela'''
+        for event in pygame.event.get():                             # Identifica os eventos
+            if event.type == QUIT:                                   # Evento: Fechar a janela
+                close_game()                                         # Chamada da função de fechar
+            if event.type == KEYDOWN:                                # Evento: Pressionar tecla
+                if event.key == K_ESCAPE:                            # Testa se a tecla é "ESC"
+                    close_game()                                     # Chamada da função de fechar
+                if event.key == K_PAUSE:                             # Testa se a tecla é "PAUSE"
+                    pause_game(self, True)                           # Chamada da função de pausar
+        pygame.display.update()                                      # Atualização de tela
+    def get_surface(self):
+        '''Método que retorna o painel de exibição dos objetos da janela'''
+        return self.surface
+    def get_size(self):
+        '''Método que retorna o tamanho da tela'''
+        return (self.width, self.height)
+
+class Handycap(pygame.sprite.Sprite):
+    '''Classe que representa o obstáculo no cenário'''
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.direction = 0
+        self.length = 0
+    def update(self):
+        '''Método que representa o comportamento do obstáculo a cada iteração do jogo'''
+    def set_position(self, pos_x, pos_y):
+        '''Método que posiciona o obstáculo no cenário'''
+        self.rect.x = pos_x
+        self.rect.y = pos_y
+    def get_position(self):
+        '''Método que retorna a posição do obstáculo no cenário'''
+        return self.rect
+    def get_direction(self):
+        '''Método que retorna a direção do obstáculo no cenário'''
+        return self.direction
+    def get_length(self):
+        '''Método que retorna o comprimento do obstáculo no cenário'''
+        return self.length
+
+class Rabbit(pygame.sprite.Sprite):
+    '''Classe que representa o coelho'''
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.current_image = 0
+        self.image = RABBIT[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+    def update(self):
+        '''Método que representa o comportamento do coelho a cada iteração do jogo'''
+        self.current_image = (self.current_image + 1) % len(RABBIT)
+        self.image = RABBIT[self.current_image]
+        wait(0.1)
+    def set_position(self, pos_x, pos_y):
+        '''Método que posiciona o coelho na tela'''
+        self.rect.x = pos_x
+        self.rect.y = pos_y
+    def get_position(self):
+        '''Método que retorna a posição do coelho na tela'''
+        return self.rect
+
+class Snake(pygame.sprite.Sprite):
+    '''Classe que representa a cobra'''
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = SNAKE[0]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.my_direction = 'Stop'
+        self.body = [(0, 0), (0, BLOCKS), (0, (2 * BLOCKS))]
+    def update(self):
+        '''Método que representa o comportamento da cobra a cada iteração do jogo'''
+    def set_initial_position(self, position):
+        '''Método que seta a posição inicial da cobra na tela'''
+        self.rect = position
+    def set_direction(self, direction):
+        '''Método que seta a direção da cabeça da cobra'''
+        self.my_direction = direction
+    def get_direction(self):
+        '''Método que retorna a direção da cabeça da cobra'''
+        return self.my_direction
+    def grow_up(self):
+        '''Método que cresce a cobra'''
+        self.body.append((0, 0))
+
+def init_libs(quality):
+    '''Função que inicializa as biliotecas utilizadas no jogo'''
+    if quality == 'high':                                            # Decisão da qualidade de som
+        buf = 2048                                                   # Alta qualidade
+    elif quality == 'mid':
+        buf = 1024                                                   # Qualidade média
+    else:
+        buf = 512                                                    # Qualidade baixa
+    pygame.init()                                                    # Inicialização do PyGame
+    pygame.mixer.pre_init(                                           # Inicialização do áudio
+        frequency = 44100,                                           # Frequência de 44100MHz
+        size = -16,                                                  # Comprimento de onda 16bits
+        channels = 2,                                                # Tocar em Stereo, 2 canais
+        buffer = buf                                                 # Qualidade do som
+    )
+
+def populate_assets():
+    '''Função que inicializa todos os ativos utilizados no jogo'''
+    global MESSAGES, SCENERY, SNAKE, RABBIT, BGM, FX                 # Indica alteração na variável global
+    MESSAGES = (
+        pygame.image.load(f'{BASE_DIR}/res/images/messages/splash.png'),
+        pygame.image.load(f'{BASE_DIR}/res/images/messages/pause.png')
+    )
+    SCENERY = (
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/border.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/corner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/incorner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/ground.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/void.png'), SCENERY_SCALE)
+    )
+    SNAKE = (
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/head.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/body.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/curve.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/tail.png'), ANIMALS_SCALE)
+    )
+    RABBIT = (
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE)
+    )
+    BGM = (
+        f'{BASE_DIR}/res/sounds/bgm/main.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level1.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level2.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level3.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level4.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level5.mid'
+    )
+    sound_type = 'wav' if 'win' in sys.platform else 'ogg'           # Decisão do tipo de áudio
+    FX = (
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/eat.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/die.{sound_type}')
+    )
 
 def get_scenery_tile(tilemap):
     '''Função que retorna as peças para a montagem do cenário'''
@@ -75,6 +282,58 @@ def get_scenery_tile(tilemap):
     elif 'void' in tilemap:
         scenery_tile = SCENERY[4]
     return scenery_tile
+
+def wait(delay):
+    '''Função que atrasa a execução do código por um tempo determinado em segundos'''
+    time_to_delay = time.time() + delay                              # Tempo inicial mais o delay
+    while time.time() <= time_to_delay:                              # Enquanto não passar o delay
+        pygame.display.update()                                      # Não faz nada
+
+def play_bgm(track):
+    '''Função para executar a música de fundo do jogo'''
+    if not pygame.mixer.music.get_busy():
+        pygame.mixer.music.load(BGM[track])                          # Carrega a música pra executar
+        pygame.mixer.music.set_volume(VOLUME_BGM)                    # Configura o volume
+        pygame.mixer.music.play(loops = -1)                          # Executa a música em loop
+
+def pause_bgm(state):
+    '''Função para suspender e resumir a música de fundo do jogo'''
+    if pygame.mixer.music.get_busy():                                # Testa se há algo tocando
+        if state is True:                                            # Se recebeu o valor True
+            pygame.mixer.music.pause()                               # Pausa a execução
+    else:                                                            # Se não há playback
+        if state is False:                                           # Se recebeu o valor False
+            pygame.mixer.music.unpause()                             # Retorna a execução
+
+def stop_bgm(delay):
+    '''Função para para a música de fundo do jogo'''
+    pygame.mixer.music.fadeout(delay)                                # Executa o fadeout da música
+    wait(delay / 1000)                                               # Transforma em segundos e espera
+    pygame.mixer.music.stop()                                        # Para a execução da música
+
+def pause_game(sface, state):
+    '''Função que pausa o jogo'''
+    pause_bgm(state)                                                 # Pausa a execução da música
+    panel = sface.get_surface()                                      # Painel de exibição do jogo
+    while state:                                                     # Enquanto estiver pausado
+        panel.blit(MESSAGES[1], (0, 0))                              # Exibe a mensagem de pause
+        #panel.fill((0, 0, 0))                                        # Exibe uma tela preta
+        for event in pygame.event.get():                             # Identifica os eventos
+            if event.type == QUIT:                                   # Evento: Fechar a janela
+                close_game()                                         # Chamada da função de fechar
+            if event.type == KEYDOWN:                                # Evento: Pressionar tecla
+                if event.key == K_ESCAPE:                            # Teste se a tecla é "ESC"
+                    close_game()                                     # Chamada da função de fechar
+                if event.key == K_PAUSE:                             # Teste se a tecla é "PAUSE"
+                    state = False                                    # Altera o estado e sai de PAUSE
+                    pause_bgm(state)                                 # Reinicia a execução da música
+        pygame.display.update()                                      # Atualização de tela
+
+def close_game():
+    '''Função que encerra o jogo'''
+    pygame.quit()                                                    # Fecha a biblioteca PyGame
+    pygame.mixer.quit()                                              # Encerra o reprodutor de aúdio
+    sys.exit()                                                       # Encerra a execução
 
 def show_matrix(sface, show_coordinates):
     '''Função que desenha na tela toda a matriz de obstáculos do jogo'''
