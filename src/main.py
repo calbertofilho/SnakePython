@@ -21,11 +21,12 @@ from pygame.constants import (
     K_ESCAPE, K_SPACE, K_PAUSE,
     K_UP, K_DOWN, K_LEFT, K_RIGHT
 )
-#from pygame.locals import *
+from pygame.locals import *
+SCRIPT_DIR = os.path.dirname(__file__)                                # Diretório atual
+MAIN_DIR = os.path.normpath(os.path.join(SCRIPT_DIR, '..'))           # Diretório do jogo
+sys.path.append(MAIN_DIR)                                             # Adição do diretório do jogo
 
 # Constantes
-BASE_DIR = os.path.dirname(__file__)                                 # Diretorio do jogo
-print(BASE_DIR)
 VERSION = 'v2.0'                                                     # Versão do jogo
 FPS = 15                                                             # Frames por segundo
 BLOCKS = 20                                                          # Tamanho do bloco da matriz
@@ -51,7 +52,7 @@ class Screen():
         self.width = 800                                             # Comprimento da janela
         self.height = 600                                            # Altura da janela
         self.caption = f'SnakePython {VERSION}'                      # Título
-        self.icon_location = f'{BASE_DIR}/res/images/icons/icon.png' # Local do ícone
+        self.icon_location = f'{MAIN_DIR}/res/images/icons/icon.png' # Local do ícone
         self.surface = pygame.display.set_mode((self.width, self.height)) # Criação da tela
         pygame.display.set_caption(self.caption)                     # Configuração do título
         self.icon = pygame.image.load(self.icon_location).convert_alpha() # Criação do ícone
@@ -162,80 +163,80 @@ def populate_assets():
     '''Função que inicializa todos os ativos utilizados no jogo'''
     global MESSAGES, SCENERY, SNAKE, RABBIT, BGM, FX                 # Indica alteração na variável global
     MESSAGES = (
-        pygame.image.load(f'{BASE_DIR}/res/images/messages/splash.png'),
-        pygame.image.load(f'{BASE_DIR}/res/images/messages/pause.png')
+        pygame.image.load(f'{MAIN_DIR}/res/images/messages/splash.png'),
+        pygame.image.load(f'{MAIN_DIR}/res/images/messages/pause.png')
     )
     SCENERY = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/border.png'), SCENERY_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/corner.png'), SCENERY_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/incorner.png'), SCENERY_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/ground.png'), SCENERY_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/scenery/void.png'), SCENERY_SCALE)
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/scenery/border.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/scenery/corner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/scenery/incorner.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/scenery/ground.png'), SCENERY_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/scenery/void.png'), SCENERY_SCALE)
     )
     SNAKE = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/head.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/body.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/curve.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/snake/tail.png'), ANIMALS_SCALE)
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/snake/head.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/snake/body.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/snake/curve.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/snake/tail.png'), ANIMALS_SCALE)
     )
     RABBIT = (
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
-        pygame.transform.scale(pygame.image.load(f'{BASE_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE)
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm6.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm5.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm4.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm3.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm1.png'), ANIMALS_SCALE),
+        pygame.transform.scale(pygame.image.load(f'{MAIN_DIR}/res/images/assets/rabbit/frm2.png'), ANIMALS_SCALE)
     )
     BGM = (
-        f'{BASE_DIR}/res/sounds/bgm/main.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level1.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level2.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level3.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level4.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level5.mid'
+        f'{MAIN_DIR}/res/sounds/bgm/main.mid',
+        f'{MAIN_DIR}/res/sounds/bgm/level1.mid',
+        f'{MAIN_DIR}/res/sounds/bgm/level2.mid',
+        f'{MAIN_DIR}/res/sounds/bgm/level3.mid',
+        f'{MAIN_DIR}/res/sounds/bgm/level4.mid',
+        f'{MAIN_DIR}/res/sounds/bgm/level5.mid'
     )
     sound_type = 'wav' if 'win' in sys.platform else 'ogg'           # Decisão do tipo de áudio
     FX = (
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/eat.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/die.{sound_type}')
+        pygame.mixer.Sound(f'{MAIN_DIR}/res/sounds/fx/{sound_type}/eat.{sound_type}'),
+        pygame.mixer.Sound(f'{MAIN_DIR}/res/sounds/fx/{sound_type}/die.{sound_type}')
     )
 
 def get_scenery_tile(tilemap):
