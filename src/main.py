@@ -514,7 +514,7 @@ def main():
         rabbit.update()                                              # Atualiza o coelho
         predator_group.draw(screen.get_surface())                    # Atualiza a posição da cobra na tela
         prey_group.draw(screen.get_surface())                        # Atualiza a animação do coelho na tela
-main()
+
 try:                                                                 # Tenta executar
     while True:                                                      # Loop infinito
         main()                                                       # Dá início ao jogo
